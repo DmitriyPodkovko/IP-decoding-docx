@@ -4,6 +4,9 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+python-docx = "*"
+numpy = "*"
+requests = "*"
 
 [dev-packages]
 

@@ -1,6 +1,6 @@
 .DS_Store
 .idea/
-*.csv
+*.docx
 *.db
 
 # Byte-compiled / optimized / DLL files
