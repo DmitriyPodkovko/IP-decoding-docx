@@ -5,15 +5,13 @@ from docx import Document
 from sqlite3 import connect
 from requests import get
 from datetime import datetime, timedelta
-from const.constants import (IPINFO_URL, ITERATOR_TOKENS,
-                             IN_FILE,
-                             OUT_FILE,
-                             DB_NAME, LIMIT_DAY, QUERIES as q)
+from const import constants as c
+from db import queries as q
 
 
 def get_next_token():
     try:
-        token = next(ITERATOR_TOKENS, '-1')
+        token = next(c.ITERATOR_TOKENS, '-1')
         if token == '-1':
             exit('TOKENS ARE ENDED !!!')
         print('Run ' + token)
@@ -48,15 +46,15 @@ def handler(input_file, url, token, output_file):
         count_insert_db = 0
         count_update_db = 0
         try:
-            with connect(DB_NAME) as conn:
+            with connect(c.DB_NAME) as conn:
                 cur = conn.cursor()
-                cur.execute(q['CREATE_TABLE'])  # IF NOT EXISTS
+                cur.execute(q.QUERIES['CREATE_TABLE'])  # IF NOT EXISTS
                 for paragraph in document.paragraphs:
                     ip_pattern = compile(r'(?:[0-9]{1,3}\.){3}[0-9]{1,3}')
                     ip_list = ip_pattern.findall(paragraph.text)
                     for ip in range(0, len(ip_list)):
                         # Select from {DB_NAME}.db
-                        cur.execute(q['GET_IP'], (ip_list[ip],))
+                        cur.execute(q.QUERIES['GET_IP'], (ip_list[ip],))
                         row = cur.fetchone()
                         # check if IP exists in {DB_NAME}.db
                         if row is None:
@@ -66,7 +64,7 @@ def handler(input_file, url, token, output_file):
                             paragraph.text = paragraph.text.replace(ip_list[ip],
                                                                     ip_list[ip] + ' - ' + whois)
                             print(paragraph.text)
-                            cur.execute(q['INSERT_IP'], (ip_list[ip], whois,))
+                            cur.execute(q.QUERIES['INSERT_IP'], (ip_list[ip], whois,))
                             conn.commit()
                             count_insert_db += 1
                         else:
@@ -74,7 +72,7 @@ def handler(input_file, url, token, output_file):
                             # get date now and calculate out of date (limit_date)
                             db_update_at = datetime.strptime(row[4], '%Y-%m-%d %H:%M:%S')
                             today = datetime.now().replace(microsecond=0)
-                            limit_date = today - timedelta(days=LIMIT_DAY)
+                            limit_date = today - timedelta(days=c.LIMIT_DAY)
                             # if IP date in {DB_NAME}.db is out of date
                             # then make a request and update IP date in {DB_NAME}.db
                             if db_update_at < limit_date:
@@ -83,7 +81,7 @@ def handler(input_file, url, token, output_file):
                                 paragraph.text = paragraph.text.replace(ip_list[ip],
                                                                         ip_list[ip] + ' - ' + whois)
                                 print(paragraph.text)
-                                cur.execute(q['UPDATE_IP'], (whois, today, ip_list[ip],))
+                                cur.execute(q.QUERIES['UPDATE_IP'], (whois, today, ip_list[ip],))
                                 conn.commit()
                                 count_update_db += 1
                             else:
@@ -97,7 +95,7 @@ def handler(input_file, url, token, output_file):
             print(f'DB error: {str(e_db)}')
         document.save(output_file)
         print(f'Number of responses from the database: {count_resp_db}')
-        print(f'Number of responses from {IPINFO_URL}: {count_resp_ipinfo}')
+        print(f'Number of responses from {c.IPINFO_URL}: {count_resp_ipinfo}')
         print(f'Number of ip inserted into the database: {count_insert_db}')
         print(f'Number of ip updated in the database: {count_update_db}')
     except Exception as e_docx:
@@ -106,6 +104,6 @@ def handler(input_file, url, token, output_file):
 
 if __name__ == '__main__':
     tkn = get_next_token()
-    if LIMIT_DAY == 0:
-        LIMIT_DAY = 1
-    handler(IN_FILE, IPINFO_URL, tkn, OUT_FILE)
+    if c.LIMIT_DAY == 0:
+        c.LIMIT_DAY = 1
+    handler(c.IN_FILE, c.IPINFO_URL, tkn, c.OUT_FILE)
