@@ -1,4 +1,5 @@
 IPINFO_URL = 'https://ipinfo.io/'
+# for example: iter(('', '?token=token1', '?token=token2', '?token=token3'))
 ITERATOR_TOKENS = iter(('', '', '', '', ''))
 IN_FILE = 'example.docx'
 OUT_FILE = 'result_' + IN_FILE
