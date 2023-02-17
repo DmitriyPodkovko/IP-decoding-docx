@@ -28,8 +28,6 @@ def get_response(url, ip_address, token):
             result = (f"{response.json()['city'] if 'city' in response.json() else 'No City'}, "
                       f"{response.json()['country'] if 'country' in response.json() else 'No Country'}, "
                       f"{response.json()['org'] if 'org' in response.json() else 'No Organisation'}")
-            if type(result) is tuple:
-                result = result[0]
             return result, token
         elif response.status_code == 429:
             token = get_next_token()
@@ -60,6 +58,8 @@ def handler(input_file, url, token, output_file):
                         if row is None:
                             # IP absent then make a request and insert result into {DB_NAME}.db
                             whois, token = get_response(url, ip_list[ip], token)
+                            if type(whois) is tuple:
+                                whois = whois[0]
                             count_resp_ipinfo += 1
                             paragraph.text = paragraph.text.replace(ip_list[ip],
                                                                     ip_list[ip] + ' - ' + whois)
