@@ -7,6 +7,8 @@ from requests import get
 from datetime import datetime, timedelta
 from const import constants as c
 from db import queries as q
+# add output .csv, use socket module
+# import socket
 
 
 def get_next_token():
@@ -39,6 +41,9 @@ def get_response(url, ip_address, token):
 def handler(input_file, url, token, output_file):
     try:
         document = Document(input_file)
+        # add output .csv, use socket module
+        # output_file_csv = open(output_file + '.csv', 'w')
+        # output_file_csv.write('IP;WHOIS;HOSTNAME;PORTS\n')
         count_resp_db = 0
         count_resp_ipinfo = 0
         count_insert_db = 0
@@ -47,13 +52,38 @@ def handler(input_file, url, token, output_file):
             with connect(c.DB_NAME) as conn:
                 cur = conn.cursor()
                 cur.execute(q.QUERIES['CREATE_TABLE'])  # IF NOT EXISTS
+                # add output .csv, use socket module
+                # line = ''
+                # port = False
                 for paragraph in document.paragraphs:
+                    # add output .csv, use socket module
+                    """
+                    if line != '':
+                        if port:
+                            if not (paragraph.text.startswith('Nmap scan') or paragraph.text == ''):
+                                line += paragraph.text + '|'
+                            else:
+                                line += '\n'
+                                port = False
+                                output_file_csv.write(line)
+                                line = ''
+                        if paragraph.text.startswith('PORT'):
+                            port = True
+                    """
                     ip_pattern = compile(r'(?:[0-9]{1,3}\.){3}[0-9]{1,3}')
                     ip_list = ip_pattern.findall(paragraph.text)
                     for ip in range(0, len(ip_list)):
                         # Select from {DB_NAME}.db
                         cur.execute(q.QUERIES['GET_IP'], (ip_list[ip],))
                         row = cur.fetchone()
+                        # add output .csv, use socket module
+                        """
+                        try:
+                            hostname = socket.gethostbyaddr(ip_list[ip])[0]
+                        except Exception as e_socket:
+                            print(f'Socket error: {str(e_socket)}')
+                            hostname = 'Unknown host'
+                        """
                         # check if IP exists in {DB_NAME}.db
                         if row is None:
                             # IP absent then make a request and insert result into {DB_NAME}.db
@@ -63,6 +93,8 @@ def handler(input_file, url, token, output_file):
                             count_resp_ipinfo += 1
                             paragraph.text = paragraph.text.replace(ip_list[ip],
                                                                     ip_list[ip] + ' - ' + whois)
+                            # add output .csv, use socket module
+                            # ip_list[ip] + ' - ' + whois + ' -> [' + hostname + ']')
                             print(paragraph.text)
                             cur.execute(q.QUERIES['INSERT_IP'], (ip_list[ip], whois,))
                             conn.commit()
@@ -80,6 +112,8 @@ def handler(input_file, url, token, output_file):
                                 count_resp_ipinfo += 1
                                 paragraph.text = paragraph.text.replace(ip_list[ip],
                                                                         ip_list[ip] + ' - ' + whois)
+                                # add output .csv, use socket module
+                                # ip_list[ip] + ' - ' + whois + ' -> [' + hostname + ']')
                                 print(paragraph.text)
                                 cur.execute(q.QUERIES['UPDATE_IP'], (whois, today, ip_list[ip],))
                                 conn.commit()
@@ -89,11 +123,17 @@ def handler(input_file, url, token, output_file):
                                 whois = row[2]
                                 paragraph.text = paragraph.text.replace(ip_list[ip],
                                                                         ip_list[ip] + ' - ' + whois)
+                                # add output .csv, use socket module
+                                # ip_list[ip] + ' - ' + whois + ' -> [' + hostname + ']')
                                 print(paragraph.text)
                                 count_resp_db += 1
+                        # add output .csv, use socket module
+                        # line = ip_list[ip] + ';' + whois + ';' + hostname + ';'
         except Exception as e_db:
             print(f'DB error: {str(e_db)}')
         document.save(output_file)
+        # add output .csv, use socket module
+        # output_file_csv.close()
         print(f'Number of responses from the database: {count_resp_db}')
         print(f'Number of responses from {c.IPINFO_URL}: {count_resp_ipinfo}')
         print(f'Number of ip inserted into the database: {count_insert_db}')
