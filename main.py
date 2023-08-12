@@ -109,6 +109,8 @@ def handler(input_file, url, token, output_file):
                             # then make a request and update IP date in {DB_NAME}.db
                             if db_update_at < limit_date:
                                 whois, token = get_response(url, ip_list[ip], token)
+                                if type(whois) is tuple:
+                                    whois = whois[0]
                                 count_resp_ipinfo += 1
                                 paragraph.text = paragraph.text.replace(ip_list[ip],
                                                                         ip_list[ip] + ' - ' + whois)
